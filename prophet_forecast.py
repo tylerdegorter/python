@@ -6,14 +6,49 @@ import seaborn as sns
 
 from prophet import Prophet
 from prophet.plot import plot_plotly, plot_components_plotly
+from prophet.make_holidays import make_holidays_df, hdays_part1
 
+# Create the data frame for all holidays used in the model
+def generate_holidays():
+  
+  # Grab all supported country codes from prophet and put into one table
+  holiday_countries = hdays_part1.list_supported_countries()
+  
+  # Create empty data frame - when we extract holidays, we union each country with
+  # the empty df until we have a complete df
+  holidays = pd.DataFrame(
+      {
+        'holiday': 'test',
+        'ds': pd.to_datetime(['2000-01-01', '2000-01-02'])
+      }
+    )
 
+  # Bring in holidays for each country by looping through each country available
+  for i in holiday_countries:
+    
+    # Grab holidays for holiday i in the loop
+    tmp = make_holidays_df(year_list = range(2010, 2026, 1), country = i)
+    
+    # Combine the temp dataset with the complete one
+    holidays = pd.concat([holidays, tmp])
+
+  # Get rid of duplicate holidays and add add a window from -3 to +5
+  holidays = holidays.drop_duplicates()
+  holidays['lower_window'] = -3
+  holidays['upper_window'] = 5
+
+  return holidays
+  
+  
 # Create time series forecasting function using prophet
 def run_forecast(df, fcst_length, include_history = False):
 
   # Create forecast and fit model
   forecast_dimensions = df.drop(columns = ['ds', 'y']).drop_duplicates()
 
+  # Create holiday dataset to pass along into prophet
+  holiday_list = generate_holidays()
+  
   # Loop through each dimension and forecast, placing into a data frame
   output = pd.DataFrame()
 
@@ -25,8 +60,7 @@ def run_forecast(df, fcst_length, include_history = False):
     historicals = pd.merge(df, join_dims, on = join_keys)
 
     # Build and fit model
-    m = Prophet(daily_seasonality=False)
-    m.add_country_holidays(country_name='US')
+    m = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False, holidays=holiday_list)
     m.fit(historicals[['ds', 'y']])
 
     # Create data frame for forecasts
