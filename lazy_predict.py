@@ -1,7 +1,7 @@
 pip install lazypredict
 
 # models
-from lazypredict.Supervised import LazyRegressor
+from lazypredict.Supervised import LazyRegressor, LazyClassifier
 from sklearn.model_selection import train_test_split
 import pandas as pd
 
