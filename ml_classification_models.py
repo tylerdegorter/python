@@ -57,7 +57,7 @@ param_grid_cart = {
 
 # build grid of inputs and run through the possible ranges
 grid_clf_cart = GridSearchCV(clf_cart, param_grid_cart, cv=10, n_jobs = -1)
-grid_clf_cart.fit(pd.get_dummies(x_train), y_train)
+grid_clf_cart.fit(x_test, y_train)
 
 # Build CART tree classifier
 cart = DecisionTreeClassifier(
@@ -66,8 +66,8 @@ cart = DecisionTreeClassifier(
     )
 
 # Fit the RF model (using the input variables) and predict
-cart.fit(pd.get_dummies(x_train), y_train)
-y_pred_cart = cart.predict(pd.get_dummies(x_test))
+cart.fit(x_test, y_train)
+y_pred_cart = cart.predict(x_test)
 
 # Plot the output
 fig = plt.figure(figsize=(20, 8))
@@ -90,7 +90,7 @@ param_grid_rf = {
 
 # build grid of inputs and run through the possible ranges
 grid_clf_rf = GridSearchCV(clf_rf, param_grid_rf, cv=10, n_jobs = -1)
-grid_clf_rf.fit(pd.get_dummies(x_train), y_train)
+grid_clf_rf.fit(x_test, y_train)
 
 # Build random forest classifier
 rf_model = RandomForestClassifier(
@@ -118,7 +118,7 @@ param_grid_gb = {
 
 # build grid of inputs and run through the possible ranges
 grid_clf_gb = GridSearchCV(clf_gb, param_grid_gb, cv=10, n_jobs = -1)
-grid_clf_gb.fit(pd.get_dummies(x_train), y_train)
+grid_clf_gb.fit(x_test, y_train)
 
 # Build gradient boosted trees
 gb_model = GradientBoostingClassifier(
@@ -147,7 +147,7 @@ param_grid_xgb = {
 
 # Run cross validation
 grid_clf_xbg = GridSearchCV(cv_xbg, param_grid_xgb, cv=3, n_jobs=-1)
-grid_clf_xbg.fit(pd.get_dummies(x_train), y_train)
+grid_clf_xbg.fit(x_test, y_train)
 
 # Fit final model
 xbg_model = XGBClassifier(
@@ -157,6 +157,6 @@ xbg_model = XGBClassifier(
     colsample_bytree = grid_clf_xbg.best_params_['colsample_bytree'],
     subsample = grid_clf_xbg.best_params_['subsample'])
 
-xbg_model.fit(pd.get_dummies(x_train), y_train)
-y_pred_xgb = xbg_model.predict(pd.get_dummies(x_test))
+xbg_model.fit(x_test, y_train)
+y_pred_xgb = xbg_model.predict(x_test)
 accuracy_score(y_test, y_pred_xgb)
