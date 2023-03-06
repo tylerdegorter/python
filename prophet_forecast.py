@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import datetime as dt
 import seaborn as sns
+import math
 
 from prophet import Prophet
 from prophet.plot import plot_plotly, plot_components_plotly
@@ -26,8 +27,12 @@ def generate_holidays():
   # Bring in holidays for each country by looping through each country available
   for i in holiday_countries:
     
-    # Grab holidays for holiday i in the loop
-    tmp = make_holidays_df(year_list = range(2010, 2026, 1), country = i)
+    # Grab holidays for holiday i in the loop. Grab holidays from the start of the
+    # input data to the end of the input data + some forecast length
+    tmp = make_holidays_df(year_list = range(
+      df.loc[:,['ds']].min()[0].year, 
+      df.loc[:,['ds']].max()[0].year + fcst_length_year
+      , 1), country = i)
     
     # Combine the temp dataset with the complete one
     holidays = pd.concat([holidays, tmp])
@@ -47,7 +52,7 @@ def run_forecast(df, fcst_length, include_history = False):
   forecast_dimensions = df.drop(columns = ['ds', 'y']).drop_duplicates()
 
   # Create holiday dataset to pass along into prophet
-  holiday_list = generate_holidays()
+  holiday_list = generate_holidays(df = df, fcst_length_year = math.ceil(fcst_length / 365))
   
   # Loop through each dimension and forecast, placing into a data frame
   output = pd.DataFrame()
