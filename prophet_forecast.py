@@ -17,12 +17,7 @@ def generate_holidays(df, fcst_length_year=3):
   
   # Create empty data frame - when we extract holidays, we union each country with
   # the empty df until we have a complete df
-  holidays = pd.DataFrame(
-      {
-        'holiday': 'test',
-        'ds': pd.to_datetime(['2000-01-01', '2000-01-02'])
-      }
-    )
+  holidays = pd.DataFrame(columns=['holiday', 'ds'])
 
   # Bring in holidays for each country by looping through each country available
   for i in holiday_countries:
