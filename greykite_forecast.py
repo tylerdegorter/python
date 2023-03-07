@@ -42,7 +42,7 @@ seasonality_params = dict(
     yearly_seasonality=True,
     quarterly_seasonality=False,
     monthly_seasonality=False,
-    weekly_seasonality=False,
+    weekly_seasonality=True,
     daily_seasonality=False,
 )
 
