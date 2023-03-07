@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import datetime as dt
 import seaborn as sns
 import math
+from datetime import datetime
 
 from prophet import Prophet
 from prophet.plot import plot_plotly, plot_components_plotly
@@ -24,8 +25,8 @@ def generate_holidays(df, fcst_length_year=3):
     
     # Grab holidays for holiday i in the loop. Grab holidays from the start of the
     # input data to the end of the input data + some forecast length
-    start_year = df.loc[:,['ds']].min()[0].year
-    end_year = df.loc[:,['ds']].max()[0].year
+    start_year = datetime.strptime(df.loc[:,['ds']].min()[0], "%Y-%m-%d").year
+    end_year = datetime.strptime(df.loc[:,['ds']].max()[0], "%Y-%m-%d").year
     tmp = make_holidays_df(year_list = range(start_year, end_year + fcst_length_year, 1), country = i)
     
     # Combine the temp dataset with the complete one
