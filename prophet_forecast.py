@@ -29,9 +29,9 @@ def generate_holidays(df, fcst_length_year=3):
     
     # Grab holidays for holiday i in the loop. Grab holidays from the start of the
     # input data to the end of the input data + some forecast length
-    tmp = make_holidays_df(year_list = range(
-      df.loc[:,['ds']].min()[0].year, 
-      df.loc[:,['ds']].max()[0].year + fcst_length_year, 1), country = i)
+    start_year = df.loc[:,['ds']].min()[0].year
+    end_year = df.loc[:,['ds']].max()[0].year
+    tmp = make_holidays_df(year_list = range(start_year, end_year + fcst_length_year, 1), country = i)
     
     # Combine the temp dataset with the complete one
     holidays = pd.concat([holidays, tmp])
