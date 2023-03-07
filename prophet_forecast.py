@@ -10,7 +10,7 @@ from prophet.plot import plot_plotly, plot_components_plotly
 from prophet.make_holidays import make_holidays_df, hdays_part1
 
 # Create the data frame for all holidays used in the model
-def generate_holidays():
+def generate_holidays(df, fcst_length_year=3):
   
   # Grab all supported country codes from prophet and put into one table
   holiday_countries = hdays_part1.list_supported_countries()
