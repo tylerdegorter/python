@@ -11,26 +11,52 @@ from prophet.plot import plot_plotly, plot_components_plotly
 from prophet.make_holidays import make_holidays_df, hdays_part1
 
 # Create the data frame for all holidays used in the model
-def generate_holidays(df, fcst_length_year=3):
+def generate_holidays(df, fcst_length_year=3, countries = []):
   
+  # TODO(tyler): Figure out how to filter down the holidays as it currently pulls all of them
+  # and takes way too long to run
   # Grab all supported country codes from prophet and put into one table
   holiday_countries = hdays_part1.list_supported_countries()
   
   # Create empty data frame - when we extract holidays, we union each country with
   # the empty df until we have a complete df
   holidays = pd.DataFrame(columns=['holiday', 'ds'])
+  
+  # For no inputs, use all countries. Otherwise use select countries
+  if len(countries) == 0:
+  
+    # Bring in holidays for each country by looping through each country available
+    for i in holiday_countries:
 
-  # Bring in holidays for each country by looping through each country available
-  for i in holiday_countries:
+      # Grab holidays for holiday i in the loop. Grab holidays from the start of the
+      # input data to the end of the input data + some forecast length
+      start_year = datetime.strptime(df.loc[:,['ds']].min()[0], "%Y-%m-%d").year
+      end_year = datetime.strptime(df.loc[:,['ds']].max()[0], "%Y-%m-%d").year
+      tmp = make_holidays_df(year_list = range(start_year, end_year + fcst_length_year, 1), country = i)
+      tmp['country'] = i
+
+      # Combine the temp dataset with the complete one
+      holidays = pd.concat([holidays, tmp])
+      
+  # Use select countries
+  elif len(countries) > 0:
     
-    # Grab holidays for holiday i in the loop. Grab holidays from the start of the
-    # input data to the end of the input data + some forecast length
-    start_year = datetime.strptime(df.loc[:,['ds']].min()[0], "%Y-%m-%d").year
-    end_year = datetime.strptime(df.loc[:,['ds']].max()[0], "%Y-%m-%d").year
-    tmp = make_holidays_df(year_list = range(start_year, end_year + fcst_length_year, 1), country = i)
+    # Bring in holidays for each country by looping through each country available
+    for i in holiday_countries:
+
+      # Only use countries of interest
+      if i in countries:
+
+        # Grab holidays for holiday i in the loop. Grab holidays from the start of the
+        # input data to the end of the input data + some forecast length
+        start_year = datetime.strptime(df.loc[:,['ds']].min()[0], "%Y-%m-%d").year
+        end_year = datetime.strptime(df.loc[:,['ds']].max()[0], "%Y-%m-%d").year
+        tmp = make_holidays_df(year_list = range(start_year, end_year + fcst_length_year, 1), country = i)
+        tmp['country'] = i
+
+        # Combine the temp dataset with the complete one
+        holidays = pd.concat([holidays, tmp])
     
-    # Combine the temp dataset with the complete one
-    holidays = pd.concat([holidays, tmp])
 
   # Get rid of duplicate holidays and add add a window from -3 to +5
   holidays = holidays.drop_duplicates()
@@ -41,13 +67,18 @@ def generate_holidays(df, fcst_length_year=3):
   
   
 # Create time series forecasting function using prophet
-def run_forecast(df, fcst_length, include_history = False):
+def run_forecast(df, fcst_length, include_history = False, country_list = []):
 
+  # If there are no other columns than date and output, add a temporary column so the 
+  # partition below works. Drop the column later
+  if df.shape[1] == 2:
+    df['Temp_Col'] = 'All'
+  
   # Create forecast and fit model
   forecast_dimensions = df.drop(columns = ['ds', 'y']).drop_duplicates()
 
   # Create holiday dataset to pass along into prophet
-  holiday_list = generate_holidays(df = df, fcst_length_year = math.ceil(fcst_length / 365))
+  holiday_list = generate_holidays(df = df, fcst_length_year = math.ceil(fcst_length / 365), countries = country_list)
   
   # Loop through each dimension and forecast, placing into a data frame
   output = pd.DataFrame()
@@ -84,10 +115,15 @@ def run_forecast(df, fcst_length, include_history = False):
   if include_history == True:
     output = pd.concat([historicals, output], axis = 0)
 
+  # change the date format to a readable string
   output.loc[:,'ds'] = output['ds'].astype(str)
+  
+  # drop the temp col if we made one
+  if 'Temp_Col' in output.columns:
+    output = output.drop(columns = ['Temp_Col'])
 
   return output
   
   
 # Forecast 
-output = run_forecast(input_data, 365, include_history = False)
+output = run_forecast(input_data, 365, include_history = False, country_list = ['US', 'FR'])
