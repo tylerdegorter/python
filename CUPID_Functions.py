@@ -20,6 +20,11 @@ def import_data(selection_id, mapping_id):
 # Build function to run the code
 def run_project_cupid():
 
+  # Authenticate
+  auth.authenticate_user()
+  creds, _ = default()
+  gc = gspread.authorize(creds)
+
   # Get the URLs to pull in
   cookbook = gc.open_by_url('https://docs.google.com/spreadsheets/d/13j_eRYzmCKC4KT8wpKDNw8aefJ1uK4-GvDGBLeBcMhQ/edit#gid=0').get_worksheet(0)
   cookbook_df = pd.DataFrame(columns=cookbook.get_all_values()[0], data=cookbook.get_all_values()[1:])
