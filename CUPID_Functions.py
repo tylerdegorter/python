@@ -1,9 +1,9 @@
 # Build function to import mapping
-def import_data(selection_id, mapping_id):
+def import_data(selection_id, mapping_id, gc_input):
   
   # Open our new sheet and add some data.
-  ws_1 = gc.open_by_url('https://docs.google.com/spreadsheets/d/'+selection_id+'/edit#gid=0').get_worksheet(0)
-  ws_2 = gc.open_by_url('https://docs.google.com/spreadsheets/d/'+mapping_id+'/edit#gid=0').get_worksheet(1)
+  ws_1 = gc_input.open_by_url('https://docs.google.com/spreadsheets/d/'+selection_id+'/edit#gid=0').get_worksheet(0)
+  ws_2 = gc_input.open_by_url('https://docs.google.com/spreadsheets/d/'+mapping_id+'/edit#gid=0').get_worksheet(1)
 
   # Create data frames
   df = pd.DataFrame(columns=ws_1.get_all_values()[0], data=ws_1.get_all_values()[1:])
@@ -18,7 +18,7 @@ def import_data(selection_id, mapping_id):
 
 
 # Build function to run the code
-def run_project_cupid():
+def run_project_cupid(gc):
 
   # Authenticate
   auth.authenticate_user()
@@ -30,7 +30,7 @@ def run_project_cupid():
   cookbook_df = pd.DataFrame(columns=cookbook.get_all_values()[0], data=cookbook.get_all_values()[1:])
 
   # Import data
-  df_pivot = import_data(selection_id=cookbook_df['Preferences'][0], mapping_id=cookbook_df['Mappings'][0])
+  df_pivot = import_data(selection_id=cookbook_df['Preferences'][0], mapping_id=cookbook_df['Mappings'][0], gc_input=gc)
 
   # Inner join the table on itself to return matches
   final_matches = pd.merge(df_pivot, 
