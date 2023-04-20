@@ -50,7 +50,7 @@ def run_project_cupid(gc):
   return print(final_matches_clean.sort_values(by=['Person 1']))
 
 # Define the function
-def create_network_map(show_names=False):
+def create_network_map(show_names=False, gc):
 
   # Get the URLs to pull in
   cookbook = gc.open_by_url('https://docs.google.com/spreadsheets/d/13j_eRYzmCKC4KT8wpKDNw8aefJ1uK4-GvDGBLeBcMhQ/edit#gid=0').get_worksheet(0)
