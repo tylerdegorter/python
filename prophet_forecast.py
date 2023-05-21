@@ -235,7 +235,8 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
 
                 # Create the prophet model and fit it
                 m = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False, 
-                            holidays=holiday_list, uncertainty_samples=uncertainty_samples_input)
+                            holidays=holiday_list, uncertainty_samples=uncertainty_samples_input,
+                           )
                 m.fit(historicals[['ds', 'y']])
 
             # If we did use cross-validation, it's possbile that the best model is logistic. If that happens, we 
@@ -277,7 +278,8 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
 
     # change the date format to a readable string
     output.loc[:,'ds'] = output['ds'].astype(str)
-  
+    output = output.drop(columns = ['cap'])
+    
     # drop the temp col if we made one
     if 'Temp_Col' in output.columns:
         output = output.drop(columns = ['Temp_Col'])
