@@ -4,6 +4,7 @@ import numpy as np
 import math
 import itertools
 from datetime import datetime
+import warnings
 
 from prophet import Prophet
 from prophet.make_holidays import make_holidays_df, hdays_part1
@@ -153,9 +154,9 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
         join_keys = list(join_dims.columns)
         historicals = pd.merge(df, join_dims, on = join_keys)
 
-        #***************************************************************************************** 
-        # If enabled, run cross-validation on historicals to pick the best model
-        #*****************************************************************************************
+    #***************************************************************************************** 
+    # If enabled, run cross-validation on historicals to pick the best model
+    #*****************************************************************************************
         if perform_cross_validation==True:
         
             # Print status update
@@ -174,35 +175,43 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
         
             # Generate all combinations of parameters
             all_params = [dict(zip(param_grid.keys(), v)) for v in itertools.product(*param_grid.values())]
-            rmses = []  # Store the RMSEs for each params here
+            rmses = pd.DataFrame([], columns=['rmse'])  # Store the RMSEs for each params here
 
             # Use cross validation to evaluate all parameters
             for params in all_params:
+              
+                # Add a cap which is double the highest value for the logistic growth model
+                df.loc[:,['cap']] = df['y'].max()*2  
             
-                # Create prophet object
-                m_cv = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False, 
-                               holidays=holiday_list, uncertainty_samples=False, **params).fit(df)
+                # suppresses Futureproof warnings due to Prophet using something Pandas doesn't like
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", category=FutureWarning)
             
+                    # Create prophet object
+                    m_cv = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False, 
+                                   holidays=holiday_list, uncertainty_samples=False, **params).fit(df)
+
                 # Runs cross-validation. It starts with the first 730 days and runs a 365 day forecast
                 # and assess the forecast vs actuals. It then moves forward by 182 days and does the same
-                df_cv = cross_validation(m_cv, 
-                                         initial='730 days', 
-                                         period='91 days', 
-                                         horizon='365 days',
-                                         parallel='processes')
+                df_cv = cross_validation(m_cv, initial='730 days', period='365 days', horizon='365 days', parallel='processes')
             
                 # Converts the cross-validation results into performance metrics
                 df_p = performance_metrics(df_cv, rolling_window=1)
-                rmses.append(df_p['rmse'].values[0])
+                
+                # Union the enw results with the existing list
+                rmses = pd.concat([
+                  rmses, 
+                  pd.DataFrame([df_p['rmse'].values[0]], columns=['rmse']).reset_index(drop=True)
+                ]).reset_index(drop=True)
 
             # Find the best parameters
             tuning_results = pd.DataFrame(all_params)
             tuning_results['rmse'] = rmses
             best_params = all_params[np.argmin(rmses)]
         
-        #***************************************************************************************** 
-        # Build and fit model
-        #*****************************************************************************************   
+    #***************************************************************************************** 
+    # Build and fit model
+    #*****************************************************************************************   
     
         # Print status update
         print('Fitting model')
@@ -213,9 +222,15 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
     
         # Fit the prophet model with the historicals for this particular loop and tuned hyperparameters (if
         # we ran cross-validation)
+        
+        # If we didn't do cross-validation, just forecast the date and value using defaults (pretty good)
         if perform_cross_validation==False:
             m.fit(historicals[['ds', 'y']])
+            
+        # If we did use cross-validation, it's possbile that the best model is logistic. If that happens, we 
+        # need to introduce a cap, which in this case will be double the largest value
         elif perform_cross_validation==True:
+            historicals.loc[:,['cap']] = historicals['y'].max()*2  
             m.fit(historicals[['ds', 'y']], **best_params)
 
         # Create data frame for forecasts based on the forecast length
@@ -246,13 +261,9 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
         output = output.drop(columns = ['Temp_Col'])
 
     # Return the final output. Consider exporting more pieces of data (CV results, holiday table, etc)
-    return output
+    return output, holiday_list
   
 
 # Forecast 
-output = run_forecast(df=input_data, 
-                      fcst_length=365, 
-                      country_list = ['US', 'CN'],
-                      uncertainty_samples_input=0, 
-                      perform_cross_validation=True, 
-                      cross_validation_param_grid=False)
+output, holiday_list = run_forecast(df=input_data, fcst_length=365, country_list = ['US', 'CN'], uncertainty_samples_input=0, 
+                                    perform_cross_validation=True, cross_validation_param_grid=False)
