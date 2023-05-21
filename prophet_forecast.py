@@ -244,9 +244,10 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
                         **best_params)
             
             # Fit the model based on the growth type
-            if ('growth' in best_params) & (best_params['growth'] == 'logistic'):
-                historicals.loc[:,['cap']] = historicals['y'].max()*2
-                m.fit(historicals[['ds', 'y', 'cap']])
+            if 'growth' in best_params:
+                if best_params['growth'] == 'logistic':
+                    historicals.loc[:,['cap']] = historicals['y'].max()*2
+                    m.fit(historicals[['ds', 'y', 'cap']])
             else:
                 m.fit(historicals[['ds', 'y']])
 
