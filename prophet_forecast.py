@@ -86,12 +86,8 @@ def generate_holidays(df, fcst_length_year=3, countries = []):
   
   
 # Create time series forecasting function using prophet
-def run_forecast(df, 
-                 fcst_length, 
-                 country_list=['US', 'CN'], 
-                 uncertainty_samples_input=0, 
-                 perform_cross_validation=False, 
-                 cross_validation_param_grid=False):
+def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples_input=0, 
+                 perform_cross_validation=False, cross_validation_param_grid=False):
     """
     Calls the Prophet model to run time-series forecasting. This function provides a wrapper around the regular Prophet
     model, which can only take one input and provide one output. This wrapper will take a df of multiple dimensions and
@@ -149,7 +145,10 @@ def run_forecast(df,
     for i in range(0, forecast_dimensions.shape[0]):
 
         # Grab the table of all unique dimensions and loop across each row, joining all values from
-        # that row against the main dataset. This only returns one unique time series to forecast
+        # that row against the main dataset. This only returns one unique time series to forecast. The
+        # reason we do .iloc[i:i+1,:] and not .iloc[i,:] is because the former gives us a data frame, 
+        # whereas the latter gives us an array and we need a df to join against. Both return the same
+        # sets of values. 
         join_dims = forecast_dimensions.iloc[i:i+1,:]
         join_keys = list(join_dims.columns)
         historicals = pd.merge(df, join_dims, on = join_keys)
@@ -168,7 +167,7 @@ def run_forecast(df,
                     "changepoint_prior_scale": [0.01, 0.1, 1, 10],
                     "seasonality_prior_scale": [0.01, 0.1, 1, 10],
                     "holidays_prior_scale": [0.01, 0.1, 1, 10],
-                    "n_changepoints": [20, 50, 100],
+                    #"n_changepoints": [20, 50, 100],
                     "growth": ["linear", "logistic"]}
             else:
                 param_grid = cross_validation_param_grid
@@ -181,12 +180,8 @@ def run_forecast(df,
             for params in all_params:
             
                 # Create prophet object
-                m_cv = Prophet(yearly_seasonality=True, 
-                               weekly_seasonality=True, 
-                               daily_seasonality=False, 
-                               holidays=holiday_list, 
-                               uncertainty_samples=False,
-                               **params).fit(df)
+                m_cv = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False, 
+                               holidays=holiday_list, uncertainty_samples=False, **params).fit(df)
             
                 # Runs cross-validation. It starts with the first 730 days and runs a 365 day forecast
                 # and assess the forecast vs actuals. It then moves forward by 182 days and does the same
@@ -213,11 +208,8 @@ def run_forecast(df,
         print('Fitting model')
     
         # Create the prophet model 
-        m = Prophet(yearly_seasonality=True, 
-                    weekly_seasonality=True, 
-                    daily_seasonality=False, 
-                    holidays=holiday_list,
-                    uncertainty_samples=uncertainty_samples_input)
+        m = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False, 
+                    holidays=holiday_list, uncertainty_samples=uncertainty_samples_input)
     
         # Fit the prophet model with the historicals for this particular loop and tuned hyperparameters (if
         # we ran cross-validation)
@@ -253,6 +245,7 @@ def run_forecast(df,
     if 'Temp_Col' in output.columns:
         output = output.drop(columns = ['Temp_Col'])
 
+    # Return the final output. Consider exporting more pieces of data (CV results, holiday table, etc)
     return output
   
 
