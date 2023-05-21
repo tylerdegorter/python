@@ -130,7 +130,8 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
     forecast_dimensions = df.drop(columns = ['ds', 'y']).drop_duplicates()
     
     # Create holiday dataset to pass along into Prophet. This calls the earlier function
-    holiday_list = generate_holidays(df = df, fcst_length_year = math.ceil(fcst_length / 365), countries = country_list)
+    holiday_list = generate_holidays(df = df, fcst_length_year = math.ceil(fcst_length / 365), 
+                                     countries = country_list)
   
     # Create a data frame to store all the forecasts. After each loop, each is placed into this df and each
     # subsequent forecast is appended to the data frame
