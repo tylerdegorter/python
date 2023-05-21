@@ -208,7 +208,7 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
 
                 # Add one to the counter and print an update
                 counter = counter + 1
-                print('Finished loop '+str(counter)+' of '+str(len(all_params)))
+                print('Finished cross-validation loop '+str(counter)+' of '+str(len(all_params)))
                 
             # Find the best parameters
             tuning_results = pd.DataFrame(all_params)
@@ -274,7 +274,7 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
         output = pd.concat([output, finalized_forecast], axis = 0)
 
         # Print status update
-        print('Finished loop '+str(i)+' of '+str(forecast_dimensions.shape[0]))
+        print('Finished forecast '+str(i)+' of '+str(forecast_dimensions.shape[0]))
 
     # change the date format to a readable string
     output.loc[:,'ds'] = output['ds'].astype(str)
