@@ -223,22 +223,32 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
         # Print status update
         print('Fitting model')
     
-        # Create the prophet model 
-        m = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False, 
-                    holidays=holiday_list, uncertainty_samples=uncertainty_samples_input)
-    
         # Fit the prophet model with the historicals for this particular loop and tuned hyperparameters (if
         # we ran cross-validation)
         
         # If we didn't do cross-validation, just forecast the date and value using defaults (pretty good)
         if perform_cross_validation==False:
+            
+            # Create the prophet model and fit it
+            m = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False, 
+                        holidays=holiday_list, uncertainty_samples=uncertainty_samples_input)
             m.fit(historicals[['ds', 'y']])
             
         # If we did use cross-validation, it's possbile that the best model is logistic. If that happens, we 
         # need to introduce a cap, which in this case will be double the largest value
         elif perform_cross_validation==True:
-            historicals.loc[:,['cap']] = historicals['y'].max()*2  
-            m.fit(historicals[['ds', 'y']], **best_params)
+            
+            # Create the prophet model
+            m = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False, 
+                        holidays=holiday_list, uncertainty_samples=uncertainty_samples_input, 
+                        **best_params)
+            
+            # Fit the model based on the growth type
+            if ('growth' in best_params) & (best_params['growth'] == 'logistic'):
+                historicals.loc[:,['cap']] = historicals['y'].max()*2
+                m.fit(historicals[['ds', 'y', 'cap']])
+            else:
+                m.fit(historicals[['ds', 'y']])
 
         # Create data frame for forecasts based on the forecast length
         future = m.make_future_dataframe(periods=(fcst_length))
