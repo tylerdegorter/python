@@ -176,7 +176,11 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
             # Generate all combinations of parameters
             all_params = [dict(zip(param_grid.keys(), v)) for v in itertools.product(*param_grid.values())]
             rmses = pd.DataFrame([], columns=['rmse'])  # Store the RMSEs for each params here
+            mapes = pd.DataFrame([], columns=['mape'])  # Store the MAPEs for each params here
 
+            # initiate counter
+            counter = 0
+            
             # Use cross validation to evaluate all parameters
             for params in all_params:
               
@@ -199,14 +203,17 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
                 df_p = performance_metrics(df_cv, rolling_window=1)
                 
                 # Union the enw results with the existing list
-                rmses = pd.concat([
-                  rmses, 
-                  pd.DataFrame([df_p['rmse'].values[0]], columns=['rmse']).reset_index(drop=True)
-                ]).reset_index(drop=True)
+                rmses = pd.concat([rmses, pd.DataFrame([df_p['rmse'].values[0]], columns=['rmse']).reset_index(drop=True)]).reset_index(drop=True)
+                mapes = pd.concat([mapes, pd.DataFrame([df_p['mape'].values[0]], columns=['mape']).reset_index(drop=True)]).reset_index(drop=True)
 
+                # Add one to the counter and print an update
+                counter = counter + 1
+                print('Finished loop '+str(counter)+' of '+str(len(all_params)))
+                
             # Find the best parameters
             tuning_results = pd.DataFrame(all_params)
             tuning_results['rmse'] = rmses
+            tuning_results['mape'] = mapes
             best_params = all_params[np.argmin(rmses)]
         
     #***************************************************************************************** 
