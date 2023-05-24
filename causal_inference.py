@@ -10,6 +10,64 @@ import math
 from statsmodels.tsa.arima_process import ArmaProcess
 from causalimpact import CausalImpact
 
+################################################################################################
+##################################### Generate sample data #####################################
+################################################################################################
+np.random.seed(12345)
+ar = np.r_[1, 0.9]
+ma = np.array([1])
+arma_process = ArmaProcess(ar, ma)
+
+X1 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+X2 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+X3 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+X4 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+X5 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+X6 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+X7 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+X8 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+X9 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+X10 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+Y1 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+Y2 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+Y3 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+Y4 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+Y5 = random.randint(90,120) + (0.75 + random.random()/2) * arma_process.generate_sample(nsample=100)
+
+# Uplevel it
+Y1[70:] = Y1[70:] + random.randint(1,15)
+Y2[60:] = Y2[60:] + random.randint(1,15)
+Y3[85:] = Y3[85:] + random.randint(1,15)
+Y4[40:] = Y4[40:] + random.randint(1,15)
+Y5[55:] = Y5[55:] + random.randint(1,15)
+
+# Create range of dates
+datelist = pd.date_range('2021-01-01', periods=100).tolist()
+
+# Create an empty list to store the dataframe rows
+rows = []
+
+# Iterate over each array and its corresponding name
+for name, array in [("X1", X1),("X2", X2),("X3", X3),("X4", X4),("X5", X5),("X6", X6),("X7", X7),("X8", X8),("X9", X9),("X10", X10),("Y1", Y1),("Y2", Y2),("Y3", Y3),("Y4", Y4),("Y5", Y5)]:
+    # Append rows for each value in the array
+    for value in array:
+        rows.append((name, value))
+
+# Create a dataframe from the rows
+df = pd.DataFrame(rows, columns=["entry", "metric"])
+df.loc[:,['treatment']] = 0
+df.iloc[1070:1099,2] = 1
+df.iloc[1160:1199,2] = 1
+df.iloc[1285:1299,2] = 1
+df.iloc[1340:1399,2] = 1
+df.iloc[1455:1499,2] = 1
+
+# Add back dates
+df['date'] = np.tile(datelist, df.shape[0] // len(datelist))
+
+###########################################################################################
+##################################### Build the model #####################################
+###########################################################################################
 
 # Step 1: Parse out observations into treatment and control tables
 def parse_observations(data):
