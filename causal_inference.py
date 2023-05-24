@@ -215,5 +215,5 @@ def run_causal_impact(data, n_controls = 5, window = 10):
 ########################### Run the model #######################################
 #################################################################################
 
-input_df = pd.read_csv('input_df.csv')
-output_df, subset_df, plot = run_causal_impact(input_df)
+df = pd.read_csv('input_df.csv')
+output_df, subset_df, plot = run_causal_impact(df)
