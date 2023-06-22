@@ -284,8 +284,11 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
         print('Finished forecast '+str(i)+' of '+str(forecast_dimensions.shape[0]))
 
     # change the date format to a readable string
-    output.loc[:,'ds'] = output['ds'].astype(str)
-    output = output.drop(columns = ['cap'])
+    output.loc[:,'ds'] = output['ds'].astype(str
+
+    # Check if the column exists; if so, drop it
+    if 'cap' in output.columns:
+        output = output.drop(columns = ['cap'])
     
     # drop the temp col if we made one
     if 'Temp_Col' in output.columns:
