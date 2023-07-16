@@ -1,8 +1,33 @@
-#***********************************************************************************************
-# Purpose:  To update
-# Source:   https://pypi.org/project/pycausalimpact/
+#************************************************************************************************************
+# Purpose:  
+#     Run a causal inference on observational data. The purpose is to assess the impact of
+#     a particular initiative over a large sample. The script does the following:
+#         1. Inputs data: each observation is an "entry", and whether it is subjected to a 
+#            particular treatment is shown as a 1 or 0 in the "treatment" column
+#         2. Finds controls: For each value that is being treated (treatment == 1), the model
+#            uses Nearest Neighbor matching to find control observations that behave similarly.
+#            This generates the control group for each treatment observation for causal inference
+#         3. Impact Analysis: For each treatment observation, the model runs Google's CausalImpact model, 
+#            using that treatment observation as the treatment, and the control observations 
+#            from (3) as the control group. The predicted and actual post-treatment uplift is returned
+#         4. Summary: Once all the actual and predicted values are returned, the model then calculates
+#            a percent uplift for each observation. This is measured as actual value / predicted value.
+#            Each date period is then indexed to the treatment period (eg. Treatment period + 1, + 2, etc)
+#            and the mean & stdev of impact is measured at each index
+#         5. Output: A chart is built looking at the mean uplift and volatility of +/- N periods around
+#            the treatment date. This is measured as the uplift of a particular treatment for this metric
+#
+#     The input data below is generated in the first part, but the actual table should have the following schema:
+#         entry: Represents the observation that we are assessing impact of. Can be customer, user, city, etc
+#         metric: The metric we are assessing. Typically revenue, page views, margin, cost, or any quantitative metric
+#         treatment: A value of 1 or 0 if the particular treatment is present for that time period
+#         date: a date value representing the time period at which the above values are tied to
 # 
-#***********************************************************************************************
+# Source:   
+#     Original R package: https://google.github.io/CausalImpact/CausalImpact.html
+#     Python Library used here: https://pypi.org/project/pycausalimpact/
+# 
+#************************************************************************************************************
 
 # Install library
 !pip install pycausalimpact
@@ -198,7 +223,7 @@ def run_causal_impact(data, n_controls = 5, window = 10):
 
         # Pivot treatment and control data
         treatment_data = treatment_data.pivot(index='date', columns='entry', values='metric').reset_index(drop=True)
-        control_data = data.loc[data['entry'].isin(control_obs['entry'])]
+        control_data = data.loc[data['entry'].isin(control_obs['control_entry'])]
         control_data = control_data.pivot(index='date', columns='entry', values='metric').reset_index(drop=True)
 
         # get pre and post periods
