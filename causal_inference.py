@@ -10,6 +10,7 @@
 # Import libraries
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import pandas as pd
 import datetime
 import random
@@ -94,11 +95,10 @@ def parse_observations(data):
     return treatment_table, control_table
 
 # Step 2: Return control entries
-def find_control_observations(data, n_controls=3):
+def find_control_observations(data, n_controls=5):
     """
-    Generates control observations for each treatment observation. Currently, it randomly
-    selects them. But, it'll be changed to select control observations using nearest neighbor
-    matching based on size, growth, and volatility.
+    Generates control observations for each treatment observation using Nearest Neighbor
+      matching on size, growth, and volatility
     
     Args:
         data: The data frame used for the causal impact modeling
@@ -108,10 +108,44 @@ def find_control_observations(data, n_controls=3):
         A data frame of control observations to be used for calculating the counterfactual
     
     """
+
+    # Parse out treatment and control obs
     treatment_table, control_table = parse_observations(data)
-    ints = random.sample(range(control_table.shape[0]), 3)
-    control_obs = control_table.iloc[ints]
-    return control_obs
+    
+    # Build empty df for storing results
+    output = pd.DataFrame(columns=['treatment_entry', 'control_entry'])
+
+    # Select control obs for each treatment observation
+    for input_entry in enumerate(treatment_table['entry']):
+      
+      # get treatment stats
+      tmp = data.loc[(data['entry'] == input_entry[1]) & (data['treatment'] == 0)].reset_index()
+      tmp_slope = tmp.reset_index().groupby(['entry']).apply(lambda tbl: np.polyfit(tbl['index'], tbl['metric'], 1)[0])
+      tmp_mean = tmp.groupby(['entry'])['metric'].mean()
+      tmp_vol = tmp.groupby(['entry'])['metric'].std()
+
+      # get control stats
+      tmp_control = data.loc[(data['entry'].isin(control_table['entry'])) & (data['date'].isin(tmp['date']))]
+      tmp_control_slopes = tmp_control.reset_index().groupby(['entry']).apply(lambda tbl_c: np.polyfit(tbl_c['index'], tbl_c['metric'], 1)[0])
+      tmp_control_mean = tmp_control.groupby(['entry'])['metric'].mean()
+      tmp_control_vol = tmp_control.groupby(['entry'])['metric'].std()
+
+      # Consolidate
+      treat = pd.concat([tmp_slope, tmp_mean, tmp_vol], axis=1)
+      control = pd.concat([tmp_control_slopes, tmp_control_mean, tmp_control_vol], axis=1)
+      combine = pd.concat([treat, control])
+      combine.columns = ['slope', 'mean', 'volatility']
+
+      # Fit and run knn algo
+      nbrs = NearestNeighbors(n_neighbors=n_controls+1, algorithm='ball_tree').fit(combine.values)
+      distances, indices = nbrs.kneighbors(combine.values)
+
+      # Create a DataFrame to store the results
+      output_tmp = pd.DataFrame({"treatment_entry": input_entry[1], 'control_entry': combine.index[indices[0]][1:]})
+      output = pd.concat([output, output_tmp])
+    
+    # Return output
+    return output
 
 # Step 3: Run causal inference model
 def run_causal_impact(data, n_controls = 5, window = 10):
@@ -151,7 +185,7 @@ def run_causal_impact(data, n_controls = 5, window = 10):
     for entry in treatment_table['entry']:
 
         # Pull control observations and intial treatment data
-        control_obs = find_control_observations(df, n_controls)
+        control_obs = find_control_observations(df, n_controls)['control']
         treatment_data = data.loc[data['entry'] == entry].reset_index(drop=True)
 
         # Get treatment dates and the treatment column
@@ -208,6 +242,7 @@ def run_causal_impact(data, n_controls = 5, window = 10):
     ax.plot(subset_df['index_date'], subset_df['delta'], color = 'cornflowerblue')
     ax.plot(subset_df['index_date'], subset_df['lower'], color = 'lightsteelblue')
     ax.plot(subset_df['index_date'], subset_df['upper'], color = 'lightsteelblue')
+    ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
     ax.fill_between(subset_df['index_date'], subset_df['lower'], subset_df['upper'], color='lightblue', alpha=0.5)
     ax.axhline(y=0, color='red', linestyle='--', lw = 0.5)
     ax.axvline(x=0, color='grey', linestyle='--', lw = 0.5)
