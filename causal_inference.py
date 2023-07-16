@@ -185,7 +185,8 @@ def run_causal_impact(data, n_controls = 5, window = 10):
     for entry in treatment_table['entry']:
 
         # Pull control observations and intial treatment data
-        control_obs = find_control_observations(df, n_controls)['control']
+        treat_control_nn = find_control_observations(df, n_controls)
+        control_obs = treat_control_nn.loc[treat_control_nn['treatment_entry'] == entry, ['control_entry']]
         treatment_data = data.loc[data['entry'] == entry].reset_index(drop=True)
 
         # Get treatment dates and the treatment column
