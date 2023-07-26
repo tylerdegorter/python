@@ -50,7 +50,10 @@ def generate_holidays(df, fcst_length_year=3, countries = []):
   
     # For no inputs, use all countries. Otherwise use select countries
     if len(countries) == 0:
-  
+
+        # Convert date column to string so it works with the next part
+        df['ds'] = df['ds'].astype(str)
+      
         # Bring in holidays for each country by looping through each country available
         for i in holiday_countries:
             
@@ -66,7 +69,10 @@ def generate_holidays(df, fcst_length_year=3, countries = []):
       
         # Use select countries
     elif len(countries) > 0:
-        
+
+        # Convert date column to string so it works with the next part
+        df['ds'] = df['ds'].astype(str)
+      
         # Bring in holidays for each country by looping through each country available
         for i in holiday_countries:
             
@@ -242,8 +248,7 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
 
                 # Create the prophet model and fit it
                 m = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=False, 
-                            holidays=holiday_list, uncertainty_samples=uncertainty_samples_input,
-                           )
+                            holidays=holiday_list, uncertainty_samples=uncertainty_samples_input)
                 m.fit(historicals[['ds', 'y']])
 
             # If we did use cross-validation, it's possbile that the best model is logistic. If that happens, we 
@@ -268,7 +273,6 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
 
         # Forecast and keep date and the predicted value only
         forecast = m.predict(future)
-        forecast = forecast[['ds', 'yhat']]
 
         # join against the unique dims we forecasted across. Create a "key" column in both tables that
         # is set to 1, and join (acts as cross join)
@@ -284,7 +288,7 @@ def run_forecast(df, fcst_length, country_list=['US', 'CN'], uncertainty_samples
         print('Finished forecast '+str(i)+' of '+str(forecast_dimensions.shape[0]))
 
     # change the date format to a readable string
-    output.loc[:,'ds'] = output['ds'].astype(str
+    output.loc[:,'ds'] = output['ds'].astype(str)
 
     # Check if the column exists; if so, drop it
     if 'cap' in output.columns:
